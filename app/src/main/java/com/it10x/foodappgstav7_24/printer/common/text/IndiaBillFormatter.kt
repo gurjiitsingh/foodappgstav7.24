@@ -186,6 +186,42 @@ object IndiaBillFormatter {
                 "$header\n$divider\n$lines"
             }
 
+//        return buildString {
+//
+//            append(ALIGN_CENTER)
+//
+//            if (!qrTitleToPrint.isNullOrBlank()) {
+//
+//                append(
+//                    qrTitleToPrint.uppercase()
+//                )
+//
+//                append("\n\n")
+//            }
+//
+//            append(ALIGN_LEFT)
+//
+//            append(
+//                """
+//------------------------------------------------
+//$outletHeader
+//------------------------------------------------
+//${buildInvoiceTitle(order)}
+//------------------------------------------------
+//$headerBlock
+//------------------------------------------------
+//$itemsBlock
+//------------------------------------------------
+//$totalsBlock
+//------------------------------------------------
+//${grandTotalLine48("TOTAL", order.grandTotal)}
+//------------------------------------------------
+//${buildOutletFooter(outletInfo, 48)}
+//Thank You!
+//""".trimIndent()
+//            )
+//        }
+
         return buildString {
 
             append(ALIGN_CENTER)
@@ -203,21 +239,11 @@ object IndiaBillFormatter {
 
             append(
                 """
-------------------------------------------------
-$outletHeader
-------------------------------------------------
-${buildInvoiceTitle(order)}
-------------------------------------------------
-$headerBlock
-------------------------------------------------
 $itemsBlock
 ------------------------------------------------
 $totalsBlock
 ------------------------------------------------
 ${grandTotalLine48("TOTAL", order.grandTotal)}
-------------------------------------------------
-${buildOutletFooter(outletInfo, 48)}
-Thank You!
 """.trimIndent()
             )
         }

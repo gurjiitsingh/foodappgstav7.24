@@ -1148,54 +1148,95 @@ class BillViewModel(
 
 
 
-                val orderItems = kotItems.map {
+                val orderItems = kotItems
+                    .groupBy {
+                        listOf(
+                            it.productId,
+                            it.basePrice,
+                            it.taxRate,
+                            it.note,
+                            it.modifiersJson
+                        )
+                    }
+                    .map { (_, group) ->
 
-                    val modifierPrice =
-                        ModifierJsonHelper.fromJson(it.modifiersJson)
-                            .flatMap { g -> g.items }
-                            .sumOf { m -> m.price }
+                        val first = group.first()
 
-                    val base = it.basePrice + modifierPrice
-                    val total = base * it.quantity
+                        val quantity = group.sumOf { it.quantity }
 
-                    PosOrderItemEntity(
-                        id = UUID.randomUUID().toString(),
+                        val modifierPricePerItem =
+                            ModifierJsonHelper.fromJson(first.modifiersJson)
+                                .flatMap { it.items }
+                                .sumOf { it.price }
 
-                        // ✅ REQUIRED (you removed these)
-                        categoryName = it.categoryName,
-                        productMode = it.productMode,
-                        currentStock = it.currentStock,
-                        categoryId = it.categoryId,
-                        parentId = it.parentId,
-                        isVariant = it.isVariant,
-                        createdById = it.createdById,
-                        createdByName = it.createdByName,
-                        orderMasterId = orderId,
-                        productId = it.productId,
-                        name = it.name,
+                        val basePlusModifier =
+                            first.basePrice + modifierPricePerItem
 
-                        basePrice = it.basePrice,
-                        modifierPrice = modifierPrice * it.quantity,
-                        quantity = it.quantity,
-                        itemSubtotal = total,
+                        val itemGrossAmount =
+                            (basePlusModifier * quantity).round(2)
 
-                        currency = _currencySymbol.value,
-                        paymentStatus = "UNPAID",
+                        val taxPerItemPlusModifier =
+                            if (first.taxType == "exclusive") {
+                                basePlusModifier * (first.taxRate / 100)
+                            } else {
+                                0.0
+                            }
 
-                        taxRate = it.taxRate,
-                        taxType = it.taxType,
-                        taxAmountPerItem = 0.0,
-                        taxTotal = 0.0,
+                        val finalPricePerItemPlusModifier =
+                            (basePlusModifier + taxPerItemPlusModifier).round(2)
 
-                        note = it.note,
-                        modifiersJson = it.modifiersJson,
+                        val finalPriceTotalItemPlusModifier =
+                            (finalPricePerItemPlusModifier * quantity).round(2)
 
-                        finalPricePerItem = base,
-                        finalTotal = total,
+                        val taxTotalItemPlusModifier =
+                            (taxPerItemPlusModifier * quantity).round(2)
 
-                        createdAt = now // ✅ NOW WILL WORK
-                    )
-                }
+                        val modifierTotal =
+                            (modifierPricePerItem * quantity).round(2)
+
+                        PosOrderItemEntity(
+                            id = UUID.randomUUID().toString(),
+
+                            categoryName = first.categoryName,
+                            productMode = first.productMode,
+                            currentStock = first.currentStock,
+                            categoryId = first.categoryId,
+                            parentId = first.parentId,
+                            isVariant = first.isVariant,
+
+                            createdById = first.createdById,
+                            createdByName = first.createdByName,
+
+                            orderMasterId = orderId,
+
+                            productId = first.productId,
+                            name = first.name,
+
+                            basePrice = first.basePrice,
+                            modifierPrice = modifierTotal,
+
+                            quantity = quantity,
+
+                            itemSubtotal = itemGrossAmount,
+
+                            currency = _currencySymbol.value,
+                            paymentStatus = "UNPAID",
+
+                            taxRate = first.taxRate,
+                            taxType = first.taxType,
+
+                            taxAmountPerItem = taxPerItemPlusModifier,
+                            taxTotal = taxTotalItemPlusModifier,
+
+                            note = first.note,
+                            modifiersJson = first.modifiersJson,
+
+                            finalPricePerItem = finalPricePerItemPlusModifier,
+                            finalTotal = finalPriceTotalItemPlusModifier,
+
+                            createdAt = now
+                        )
+                    }
 
                 // =========================
                 // SAVE (optional but good)

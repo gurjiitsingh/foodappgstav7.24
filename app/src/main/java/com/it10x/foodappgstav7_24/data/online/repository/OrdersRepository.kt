@@ -176,12 +176,12 @@ class OrdersRepository {
     // -----------------------------
     suspend fun getOrderProducts(orderMasterId: String): List<OrderProductData> {
 
-        //  Log.d("ORDER_REPO", "Fetching items for orderId=$orderMasterId")
-
         val snapshot = db.collection("orderProducts")
             .whereEqualTo("orderMasterId", orderMasterId)
             .get()
             .await()
+
+
 
         return snapshot.documents.mapNotNull {
             it.toObject(OrderProductData::class.java)?.copy(id = it.id)

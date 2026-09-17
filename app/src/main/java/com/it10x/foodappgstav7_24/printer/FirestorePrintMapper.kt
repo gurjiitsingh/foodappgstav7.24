@@ -44,7 +44,7 @@ object FirestorePrintMapper {
             PrintItem(
                 name = item.name,
                 quantity = item.quantity,
-                price = toDouble(item.price),
+                price = item.finalPriceDouble(),
                 subtotal = toDouble(item.itemSubtotal),
 
                 // NOTE

@@ -1066,6 +1066,58 @@ class BillViewModel(
 
                 val itemSubtotalPaise = calculation.itemSubtotalPaise
 
+                // =========================
+// INDEPENDENT SUBTOTAL VALIDATION
+// =========================
+                val validationKotItems = kotItemDao
+                    .getItemsForTableSync(tableId)
+                    .filter { it.status == "DONE" }
+
+                val validationItemSubtotalPaise = validationKotItems.sumOf { item ->
+                    MoneyUtils.toPaise(item.basePrice) * item.quantity
+                }
+
+                val firstTotalQuantity = kotItems.sumOf { it.quantity }
+                val validationTotalQuantity = validationKotItems.sumOf { it.quantity }
+
+                Log.d(
+                    "BILL_VALIDATION",
+                    """
+    ================================
+    SUBTOTAL VALIDATION
+    tableId=$tableId
+    firstItemCount=${kotItems.size}
+    secondItemCount=${validationKotItems.size}
+    calculatorSubtotalPaise=$itemSubtotalPaise
+    independentSubtotalPaise=$validationItemSubtotalPaise
+    calculatorSubtotal=${MoneyUtils.fromPaise(itemSubtotalPaise)}
+    independentSubtotal=${MoneyUtils.fromPaise(validationItemSubtotalPaise)}
+    ================================
+    """.trimIndent()
+                )
+
+                if (itemSubtotalPaise != validationItemSubtotalPaise ||
+                    firstTotalQuantity != validationTotalQuantity ) {
+
+                    Log.e(
+                        "BILL_VALIDATION",
+                        """
+        BILL BLOCKED - SUBTOTAL MISMATCH
+        tableId=$tableId
+        calculatorSubtotal=${MoneyUtils.fromPaise(itemSubtotalPaise)}
+        independentSubtotal=${MoneyUtils.fromPaise(validationItemSubtotalPaise)}
+        firstItemCount=${kotItems.size}
+        secondItemCount=${validationKotItems.size}
+        """.trimIndent()
+                    )
+
+                    withContext(Dispatchers.Main) {
+                        sendEvent("Something went wrong. Please try again.")
+                    }
+
+                    return@launch
+                }
+
                 val safeDiscountPaise = calculation.discountPaise
 
                 val deliveryFeePaise = calculation.deliveryFeePaise
